@@ -24,6 +24,9 @@ on:
       - "Cargo.lock"
       - ".github/workflows/macos-build.yml"
 
+permissions:
+  contents: read
+
 jobs:
   rust-build-macos:
     runs-on: macos-latest
