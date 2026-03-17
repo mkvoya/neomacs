@@ -28,7 +28,7 @@ permissions:
   contents: read
 
 jobs:
-  rust-build-macos:
+  build-macos:
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -44,19 +44,21 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
+            neomacs-display
             neovm-core
             neovm-worker
 
-      - name: Check neovm-core
+      - name: Install dependencies (Homebrew)
         run: |
-          RUSTFLAGS='-Awarnings' cargo check \
-            --manifest-path neovm-core/Cargo.toml \
-            --no-default-features \
-            --features core-backend-rust
+          brew update
+          brew install autoconf automake texinfo pkgconf \
+            glib cairo \
+            gstreamer gst-plugins-base gst-plugins-good \
+            jpeg-turbo libtiff giflib libpng librsvg webp \
+            gnutls libxml2 sqlite jansson tree-sitter gmp
 
-      - name: Check neovm-worker
+      - name: Build Neomacs (README macOS flow)
         run: |
-          RUSTFLAGS='-Awarnings' cargo check \
-            --manifest-path neovm-worker/Cargo.toml \
-            --no-default-features \
-            --features core-backend-rust
+          ./autogen.sh
+          ./configure --with-neomacs --without-ns --with-file-notification=no
+          make -j"$(sysctl -n hw.ncpu)"
