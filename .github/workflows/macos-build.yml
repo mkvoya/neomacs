@@ -1,0 +1,64 @@
+name: macos-build
+
+on:
+  pull_request:
+    paths:
+      - "neomacs-bin/**"
+      - "neomacs-display/**"
+      - "neovm-core/**"
+      - "neovm-host-abi/**"
+      - "neovm-worker/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/macos-build.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "neomacs-bin/**"
+      - "neomacs-display/**"
+      - "neovm-core/**"
+      - "neovm-host-abi/**"
+      - "neovm-worker/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/macos-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.93.1"
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            neomacs-display
+            neovm-core
+            neovm-worker
+
+      - name: Install dependencies (Homebrew)
+        run: |
+          brew update
+          brew install autoconf automake texinfo pkgconf \
+            glib cairo \
+            gstreamer gst-plugins-base gst-plugins-good \
+            jpeg-turbo libtiff giflib libpng librsvg webp \
+            gnutls libxml2 sqlite jansson tree-sitter gmp
+
+      - name: Build Neomacs (README macOS flow)
+        run: |
+          ./autogen.sh
+          ./configure --with-neomacs --without-ns --with-file-notification=no
+          make -j"$(sysctl -n hw.ncpu)"
